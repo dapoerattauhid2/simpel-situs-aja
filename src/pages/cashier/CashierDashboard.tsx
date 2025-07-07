@@ -102,28 +102,15 @@ const CashierDashboard = () => {
     
     try {
       const change = received - order.total_amount;
+      const cashNote = `Pembayaran tunai untuk pesanan ${order.child_name}. Diterima: ${formatPrice(received)}, Kembalian: ${formatPrice(change)}`;
       
-      // Record cash payment
-      const { error: cashError } = await supabase
-        .from('cash_payments')
-        .insert({
-          order_id: order.id,
-          cashier_id: (await supabase.auth.getUser()).data.user?.id,
-          amount: order.total_amount,
-          received_amount: received,
-          change_amount: change,
-          payment_date: new Date().toISOString(),
-          notes: `Pembayaran tunai untuk pesanan ${order.child_name}`
-        });
-
-      if (cashError) throw cashError;
-
-      // Update order payment status
+      // Update order payment status and add cash payment note
       const { error: orderError } = await supabase
         .from('orders')
         .update({ 
           payment_status: 'paid',
-          status: 'confirmed'
+          status: 'confirmed',
+          notes: cashNote
         })
         .eq('id', order.id);
 

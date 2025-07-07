@@ -12,16 +12,12 @@ import { id } from 'date-fns/locale';
 
 interface CashPayment {
   id: string;
-  amount: number;
-  received_amount: number;
-  change_amount: number;
-  payment_date: string;
+  child_name: string;
+  child_class: string;
+  total_amount: number;
+  order_date: string;
   notes: string;
-  orders: {
-    child_name: string;
-    child_class: string;
-    total_amount: number;
-  };
+  updated_at: string;
 }
 
 const CashierCashPayments = () => {
@@ -44,8 +40,8 @@ const CashierCashPayments = () => {
 
   useEffect(() => {
     const filtered = payments.filter(payment => 
-      payment.orders?.child_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payment.orders?.child_class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.child_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.child_class?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       payment.notes?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     setFilteredPayments(filtered);
@@ -56,27 +52,17 @@ const CashierCashPayments = () => {
       setLoading(true);
       
       let query = supabase
-        .from('cash_payments')
-        .select(`
-          id,
-          amount,
-          received_amount,
-          change_amount,
-          payment_date,
-          notes,
-          orders (
-            child_name,
-            child_class,
-            total_amount
-          )
-        `)
-        .order('payment_date', { ascending: false });
+        .from('orders')
+        .select('id, child_name, child_class, total_amount, order_date, notes, updated_at')
+        .eq('payment_status', 'paid')
+        .ilike('notes', '%pembayaran tunai%')
+        .order('updated_at', { ascending: false });
 
       if (start) {
-        query = query.gte('payment_date', `${start}T00:00:00`);
+        query = query.gte('order_date', start);
       }
       if (end) {
-        query = query.lte('payment_date', `${end}T23:59:59`);
+        query = query.lte('order_date', end);
       }
 
       const { data, error } = await query;
@@ -115,9 +101,7 @@ const CashierCashPayments = () => {
     }).format(price);
   };
 
-  const totalAmount = filteredPayments.reduce((sum, payment) => sum + payment.amount, 0);
-  const totalReceived = filteredPayments.reduce((sum, payment) => sum + payment.received_amount, 0);
-  const totalChange = filteredPayments.reduce((sum, payment) => sum + payment.change_amount, 0);
+  const totalAmount = filteredPayments.reduce((sum, payment) => sum + payment.total_amount, 0);
 
   if (loading) {
     return (
@@ -142,7 +126,7 @@ const CashierCashPayments = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium">Total Transaksi</CardTitle>
@@ -158,24 +142,6 @@ const CashierCashPayments = () => {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{formatPrice(totalAmount)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Diterima</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">{formatPrice(totalReceived)}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Total Kembalian</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{formatPrice(totalChange)}</div>
           </CardContent>
         </Card>
       </div>
@@ -254,12 +220,10 @@ const CashierCashPayments = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Tanggal & Waktu</TableHead>
+                    <TableHead>Tanggal</TableHead>
                     <TableHead>Nama Anak</TableHead>
                     <TableHead>Kelas</TableHead>
                     <TableHead>Total Belanja</TableHead>
-                    <TableHead>Uang Diterima</TableHead>
-                    <TableHead>Kembalian</TableHead>
                     <TableHead>Catatan</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -267,22 +231,16 @@ const CashierCashPayments = () => {
                   {filteredPayments.map((payment) => (
                     <TableRow key={payment.id}>
                       <TableCell>
-                        {format(new Date(payment.payment_date), 'dd/MM/yyyy HH:mm', { locale: id })}
+                        {format(new Date(payment.order_date), 'dd/MM/yyyy', { locale: id })}
                       </TableCell>
                       <TableCell className="font-medium">
-                        {payment.orders?.child_name || '-'}
+                        {payment.child_name || '-'}
                       </TableCell>
                       <TableCell>
-                        {payment.orders?.child_class ? `Kelas ${payment.orders.child_class}` : '-'}
+                        {payment.child_class ? `Kelas ${payment.child_class}` : '-'}
                       </TableCell>
                       <TableCell className="font-bold text-green-600">
-                        {formatPrice(payment.amount)}
-                      </TableCell>
-                      <TableCell className="font-bold text-blue-600">
-                        {formatPrice(payment.received_amount)}
-                      </TableCell>
-                      <TableCell className="font-bold text-orange-600">
-                        {formatPrice(payment.change_amount)}
+                        {formatPrice(payment.total_amount)}
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">
                         {payment.notes || '-'}

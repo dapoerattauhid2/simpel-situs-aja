@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart3, Download, Printer, TrendingUp, Users, CreditCard } from 'lucide-react';
+import { BarChart3, Printer, TrendingUp, Users, CreditCard } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 
@@ -69,6 +69,7 @@ const CashierReports = () => {
           order_date,
           total_amount,
           payment_status,
+          notes,
           order_items (
             quantity,
             price,
@@ -83,19 +84,18 @@ const CashierReports = () => {
 
       if (ordersError) throw ordersError;
 
-      // Fetch cash payments
-      const { data: cashPayments, error: cashError } = await supabase
-        .from('cash_payments')
-        .select('amount, payment_date')
-        .gte('payment_date', `${start}T00:00:00`)
-        .lte('payment_date', `${end}T23:59:59`);
-
-      if (cashError) throw cashError;
-
       // Process data
       const totalOrders = orders?.length || 0;
       const totalRevenue = orders?.reduce((sum, order) => sum + (order.total_amount || 0), 0) || 0;
-      const totalCashPayments = cashPayments?.reduce((sum, payment) => sum + payment.amount, 0) || 0;
+      
+      // Calculate cash payments from orders with cash payment notes
+      const cashOrders = orders?.filter(order => 
+        order.payment_status === 'paid' && 
+        order.notes && 
+        order.notes.toLowerCase().includes('pembayaran tunai')
+      ) || [];
+      
+      const totalCashPayments = cashOrders.reduce((sum, order) => sum + order.total_amount, 0);
       const totalOnlinePayments = totalRevenue - totalCashPayments;
       const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
@@ -123,19 +123,14 @@ const CashierReports = () => {
       orders?.forEach(order => {
         const date = order.order_date;
         const current = dailyMap.get(date) || { orders: 0, revenue: 0, cashPayments: 0 };
+        const isCashPayment = order.payment_status === 'paid' && 
+                            order.notes && 
+                            order.notes.toLowerCase().includes('pembayaran tunai');
+        
         dailyMap.set(date, {
           orders: current.orders + 1,
           revenue: current.revenue + (order.total_amount || 0),
-          cashPayments: current.cashPayments
-        });
-      });
-
-      cashPayments?.forEach(payment => {
-        const date = format(new Date(payment.payment_date), 'yyyy-MM-dd');
-        const current = dailyMap.get(date) || { orders: 0, revenue: 0, cashPayments: 0 };
-        dailyMap.set(date, {
-          ...current,
-          cashPayments: current.cashPayments + payment.amount
+          cashPayments: current.cashPayments + (isCashPayment ? order.total_amount : 0)
         });
       });
 
