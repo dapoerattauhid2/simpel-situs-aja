@@ -1,131 +1,167 @@
 
-import { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu, ShoppingCart, Package, Users, CreditCard, LogOut } from 'lucide-react';
-import { useAuth } from '@/hooks/useAuth';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { Home, User, ShoppingBag, LogOut, Settings, Menu, X } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Navbar = () => {
-  const [isOpen, setIsOpen] = useState(false);
-  const location = useLocation();
-  const { signOut } = useAuth();
-
-  const isActive = (path: string) => location.pathname === path;
-
-  const NavLinks = ({ mobile = false }) => (
-    <>
-      <Link
-        to="/"
-        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive('/') 
-            ? 'bg-orange-100 text-orange-700' 
-            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
-        } ${mobile ? 'w-full' : ''}`}
-        onClick={() => mobile && setIsOpen(false)}
-      >
-        <ShoppingCart className="h-4 w-4" />
-        <span>Pesan Menu</span>
-      </Link>
-      
-      <Link
-        to="/orders"
-        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive('/orders') 
-            ? 'bg-orange-100 text-orange-700' 
-            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
-        } ${mobile ? 'w-full' : ''}`}
-        onClick={() => mobile && setIsOpen(false)}
-      >
-        <Package className="h-4 w-4" />
-        <span>Pesanan</span>
-      </Link>
-      
-      <Link
-        to="/children"
-        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive('/children') 
-            ? 'bg-orange-100 text-orange-700' 
-            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
-        } ${mobile ? 'w-full' : ''}`}
-        onClick={() => mobile && setIsOpen(false)}
-      >
-        <Users className="h-4 w-4" />
-        <span>Data Anak</span>
-      </Link>
-
-      <Link
-        to="/cashier"
-        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
-          isActive('/cashier') 
-            ? 'bg-orange-100 text-orange-700' 
-            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
-        } ${mobile ? 'w-full' : ''}`}
-        onClick={() => mobile && setIsOpen(false)}
-      >
-        <CreditCard className="h-4 w-4" />
-        <span>Kasir</span>
-      </Link>
-    </>
-  );
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+  const { isAdmin } = useUserRole();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <nav className="bg-white shadow-lg border-b">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo */}
-          <div className="flex items-center">
-            <Link to="/" className="flex-shrink-0 flex items-center">
-              <div className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
-                Katering Sekolah
-              </div>
-            </Link>
-          </div>
+    <div className="sticky top-0 z-50 bg-orange-500 text-white py-2 md:py-3 shadow-md">
+      <div className="container mx-auto px-3 md:px-4 flex items-center justify-between">
+        <Link to="/" className="text-lg md:text-2xl font-bold truncate">
+          CateringKu
+        </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-1">
-            <NavLinks />
-            
+        {/* Desktop Navigation */}
+        <div className="hidden lg:flex items-center space-x-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10 text-xs px-2 py-1"
+            onClick={() => navigate('/')}
+          >
+            <Home className="h-3 w-3 mr-1" />
+            Menu & Pesan
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10 text-xs px-2 py-1"
+            onClick={() => navigate('/children')}
+          >
+            <User className="h-3 w-3 mr-1" />
+            Data Anak
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-white/10 text-xs px-2 py-1"
+            onClick={() => navigate('/orders')}
+          >
+            <ShoppingBag className="h-3 w-3 mr-1" />
+            Riwayat
+          </Button>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden">
             <Button
-              onClick={signOut}
               variant="ghost"
-              className="flex items-center space-x-2 text-gray-700 hover:text-red-600 hover:bg-red-50"
+              size="sm"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-white hover:bg-white/10 p-1 h-8 w-8"
             >
-              <LogOut className="h-4 w-4" />
-              <span>Keluar</span>
+              {isMobileMenuOpen ? (
+                <X className="h-4 w-4" />
+              ) : (
+                <Menu className="h-4 w-4" />
+              )}
             </Button>
           </div>
 
-          {/* Mobile menu button */}
-          <div className="md:hidden flex items-center">
-            <Sheet open={isOpen} onOpenChange={setIsOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="right" className="w-64">
-                <div className="flex flex-col space-y-4 mt-8">
-                  <NavLinks mobile />
-                  
-                  <Button
-                    onClick={() => {
-                      signOut();
-                      setIsOpen(false);
-                    }}
-                    variant="ghost"
-                    className="flex items-center space-x-2 text-gray-700 hover:text-red-600 hover:bg-red-50 w-full justify-start px-3 py-2"
-                  >
-                    <LogOut className="h-4 w-4" />
-                    <span>Keluar</span>
-                  </Button>
-                </div>
-              </SheetContent>
-            </Sheet>
-          </div>
+          {/* User Menu */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-7 w-7 md:h-8 md:w-8 rounded-full p-0">
+                <Avatar className="h-7 w-7 md:h-8 md:w-8">
+                  <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={user?.user_metadata?.full_name || "Avatar"} />
+                  <AvatarFallback className="text-xs">{user?.user_metadata?.full_name?.charAt(0).toUpperCase() || "U"}</AvatarFallback>
+                </Avatar>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-48 mr-2">
+              <DropdownMenuLabel className="text-sm">Akun</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className="text-xs">
+                <User className="mr-2 h-3 w-3" />
+                <span>Profil</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate('/orders')} className="text-xs">
+                <ShoppingBag className="mr-2 h-3 w-3" />
+                <span>Pesanan</span>
+              </DropdownMenuItem>
+              {isAdmin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/admin')} className="text-xs">
+                    <Settings className="mr-2 h-3 w-3" />
+                    <span>Panel Admin</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => signOut()} className="text-xs">
+                <LogOut className="mr-2 h-3 w-3" />
+                <span>Keluar</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
-    </nav>
+
+      {/* Mobile Navigation Menu */}
+      {isMobileMenuOpen && (
+        <div className="lg:hidden border-t border-orange-400 bg-orange-500">
+          <div className="container mx-auto px-3 py-3 space-y-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-white hover:bg-white/10 text-sm h-8"
+              onClick={() => {
+                navigate('/');
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <Home className="h-4 w-4 mr-2" />
+              Menu & Pesan
+            </Button>
+            
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-white hover:bg-white/10 text-sm h-8"
+              onClick={() => {
+                navigate('/children');
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <User className="h-4 w-4 mr-2" />
+              Data Anak
+            </Button>
+            
+            <Button
+              variant="ghost"
+              className="w-full justify-start text-white hover:bg-white/10 text-sm h-8"
+              onClick={() => {
+                navigate('/orders');
+                setIsMobileMenuOpen(false);
+              }}
+            >
+              <ShoppingBag className="h-4 w-4 mr-2" />
+              Riwayat Pesanan
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 
