@@ -1,3 +1,4 @@
+
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -12,6 +13,7 @@ import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
 import Navbar from "./components/Navbar";
 import AdminNavbar from "./components/AdminNavbar";
+import CashierNavbar from "./components/CashierNavbar";
 import MidtransScript from "./components/MidtransScript";
 
 // Admin pages
@@ -23,11 +25,17 @@ import Reports from "./pages/admin/Reports";
 import PopulateDailyMenus from "./pages/admin/PopulateDailyMenus";
 import OrderRecap from "./pages/admin/OrderRecap";
 
+// Cashier pages
+import CashierDashboard from "./pages/cashier/CashierDashboard";
+import CashierOrders from "./pages/cashier/CashierOrders";
+import CashierCashPayments from "./pages/cashier/CashierCashPayments";
+import CashierReports from "./pages/cashier/CashierReports";
+
 const queryClient = new QueryClient();
 
-const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
+const ProtectedRoute = ({ children, adminOnly = false, cashierOnly = false }: { children: React.ReactNode; adminOnly?: boolean; cashierOnly?: boolean }) => {
   const { user, loading } = useAuth();
-  const { role, loading: roleLoading, isAdmin } = useUserRole();
+  const { role, loading: roleLoading, isAdmin, isCashier } = useUserRole();
   
   if (loading || roleLoading) {
     return (
@@ -42,6 +50,10 @@ const ProtectedRoute = ({ children, adminOnly = false }: { children: React.React
   }
 
   if (adminOnly && !isAdmin) {
+    return <Navigate to="/" replace />;
+  }
+
+  if (cashierOnly && !isCashier) {
     return <Navigate to="/" replace />;
   }
   
@@ -68,13 +80,16 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 
 const AppContent = () => {
   const { user } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isCashier } = useUserRole();
   const isAdminRoute = window.location.pathname.startsWith('/admin');
+  const isCashierRoute = window.location.pathname.startsWith('/cashier');
   
   return (
     <div className="min-h-screen bg-gray-50">
       {user && (
-        isAdminRoute ? <AdminNavbar /> : <Navbar />
+        isAdminRoute ? <AdminNavbar /> : 
+        isCashierRoute ? <CashierNavbar /> : 
+        <Navbar />
       )}
       <Routes>
         <Route 
@@ -166,6 +181,40 @@ const AppContent = () => {
           element={
             <ProtectedRoute adminOnly={true}>
               <PopulateDailyMenus />
+            </ProtectedRoute>
+          } 
+        />
+
+        {/* Cashier routes */}
+        <Route 
+          path="/cashier" 
+          element={
+            <ProtectedRoute cashierOnly={true}>
+              <CashierDashboard />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cashier/orders" 
+          element={
+            <ProtectedRoute cashierOnly={true}>
+              <CashierOrders />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cashier/cash-payments" 
+          element={
+            <ProtectedRoute cashierOnly={true}>
+              <CashierCashPayments />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/cashier/reports" 
+          element={
+            <ProtectedRoute cashierOnly={true}>
+              <CashierReports />
             </ProtectedRoute>
           } 
         />

@@ -35,5 +35,11 @@ export const useUserRole = () => {
     }
   };
 
-  return { role, loading, isAdmin: role === 'admin' };
+  return { 
+    role, 
+    loading, 
+    isAdmin: role === 'admin',
+    isCashier: role === 'cashier',
+    isParent: role === 'parent'
+  };
 };

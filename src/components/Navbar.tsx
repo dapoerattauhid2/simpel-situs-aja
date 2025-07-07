@@ -19,7 +19,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 const Navbar = () => {
   const navigate = useNavigate();
   const { user, signOut } = useAuth();
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isCashier } = useUserRole();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
@@ -106,6 +106,15 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={() => navigate('/admin')} className="text-xs">
                     <Settings className="mr-2 h-3 w-3" />
                     <span>Panel Admin</span>
+                  </DropdownMenuItem>
+                </>
+              )}
+              {isCashier && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/cashier')} className="text-xs">
+                    <Settings className="mr-2 h-3 w-3" />
+                    <span>Panel Kasir</span>
                   </DropdownMenuItem>
                 </>
               )}
