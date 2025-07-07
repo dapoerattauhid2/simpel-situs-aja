@@ -1,182 +1,167 @@
 
-import { useState } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-import { LayoutDashboard, Utensils, ShoppingBag, Calendar, FileText, LogOut, Menu, X, Plus, BarChart3 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { useAuth } from "@/hooks/useAuth";
-import { cn } from "@/lib/utils";
+import { useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { 
+  Menu, 
+  LayoutDashboard, 
+  Package, 
+  ShoppingCart, 
+  BarChart3, 
+  Calendar,
+  Users,
+  CreditCard,
+  LogOut 
+} from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 const AdminNavbar = () => {
-  const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
   const location = useLocation();
-  const { user, signOut } = useAuth();
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { signOut } = useAuth();
 
-  const navigationItems = [
-    {
-      name: "Dashboard",
-      href: "/admin",
-      icon: LayoutDashboard,
-    },
-    {
-      name: "Manajemen Menu",
-      href: "/admin/food-management",
-      icon: Utensils,
-    },
-    {
-      name: "Manajemen Pesanan",
-      href: "/admin/order-management",
-      icon: ShoppingBag,
-    },
-    {
-      name: "Jadwal & Kuota",
-      href: "/admin/schedule-management",
-      icon: Calendar,
-    },
-    {
-      name: "Populate Daily Menus",
-      href: "/admin/populate-daily-menus",
-      icon: Plus,
-    },
-    {
-      name: "Rekapitulasi",
-      href: "/admin/order-recap",
-      icon: BarChart3,
-    },
-    {
-      name: "Laporan",
-      href: "/admin/reports",
-      icon: FileText,
-    },
-  ];
+  const isActive = (path: string) => location.pathname === path;
 
-  const isActiveRoute = (href: string) => {
-    if (href === "/admin") {
-      return location.pathname === "/admin";
-    }
-    return location.pathname.startsWith(href);
-  };
+  const NavLinks = ({ mobile = false }) => (
+    <>
+      <Link
+        to="/admin"
+        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive('/admin') 
+            ? 'bg-orange-100 text-orange-700' 
+            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+        } ${mobile ? 'w-full' : ''}`}
+        onClick={() => mobile && setIsOpen(false)}
+      >
+        <LayoutDashboard className="h-4 w-4" />
+        <span>Dashboard</span>
+      </Link>
+      
+      <Link
+        to="/admin/food"
+        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive('/admin/food') 
+            ? 'bg-orange-100 text-orange-700' 
+            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+        } ${mobile ? 'w-full' : ''}`}
+        onClick={() => mobile && setIsOpen(false)}
+      >
+        <Package className="h-4 w-4" />
+        <span>Menu</span>
+      </Link>
+      
+      <Link
+        to="/admin/orders"
+        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive('/admin/orders') 
+            ? 'bg-orange-100 text-orange-700' 
+            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+        } ${mobile ? 'w-full' : ''}`}
+        onClick={() => mobile && setIsOpen(false)}
+      >
+        <ShoppingCart className="h-4 w-4" />
+        <span>Pesanan</span>
+      </Link>
+
+      <Link
+        to="/cashier"
+        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive('/cashier') 
+            ? 'bg-orange-100 text-orange-700' 
+            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+        } ${mobile ? 'w-full' : ''}`}
+        onClick={() => mobile && setIsOpen(false)}
+      >
+        <CreditCard className="h-4 w-4" />
+        <span>Kasir</span>
+      </Link>
+      
+      <Link
+        to="/admin/reports"
+        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive('/admin/reports') 
+            ? 'bg-orange-100 text-orange-700' 
+            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+        } ${mobile ? 'w-full' : ''}`}
+        onClick={() => mobile && setIsOpen(false)}
+      >
+        <BarChart3 className="h-4 w-4" />
+        <span>Laporan</span>
+      </Link>
+      
+      <Link
+        to="/admin/schedules"
+        className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+          isActive('/admin/schedules') 
+            ? 'bg-orange-100 text-orange-700' 
+            : 'text-gray-700 hover:text-orange-600 hover:bg-orange-50'
+        } ${mobile ? 'w-full' : ''}`}
+        onClick={() => mobile && setIsOpen(false)}
+      >
+        <Calendar className="h-4 w-4" />
+        <span>Jadwal</span>
+      </Link>
+    </>
+  );
 
   return (
-    <div className="sticky top-0 z-50 bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-lg">
-      <div className="container mx-auto px-2 md:px-4">
-        <div className="flex items-center justify-between h-14 md:h-16">
+    <nav className="bg-white shadow-lg border-b">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16">
           {/* Logo */}
-          <Link to="/admin" className="text-lg md:text-2xl font-bold truncate">
-            CateringKu Admin
-          </Link>
+          <div className="flex items-center">
+            <Link to="/admin" className="flex-shrink-0 flex items-center">
+              <div className="text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 bg-clip-text text-transparent">
+                Admin Katering
+              </div>
+            </Link>
+          </div>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center space-x-1">
-            {navigationItems.map((item) => (
-              <Link
-                key={item.name}
-                to={item.href}
-                className={cn(
-                  "flex items-center px-2 py-2 rounded-md text-xs font-medium transition-colors whitespace-nowrap",
-                  isActiveRoute(item.href)
-                    ? "bg-white/20 text-white"
-                    : "text-white/80 hover:bg-white/10 hover:text-white"
-                )}
-              >
-                <item.icon className="h-3 w-3 mr-1" />
-                {item.name}
-              </Link>
-            ))}
-          </nav>
+          <div className="hidden lg:flex items-center space-x-1">
+            <NavLinks />
+            
+            <Button
+              onClick={signOut}
+              variant="ghost"
+              className="flex items-center space-x-2 text-gray-700 hover:text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Keluar</span>
+            </Button>
+          </div>
 
-          <div className="flex items-center space-x-2">
-            {/* Mobile Menu Button */}
-            <div className="lg:hidden">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="text-white hover:bg-white/10 p-2"
-              >
-                {isMobileMenuOpen ? (
-                  <X className="h-5 w-5" />
-                ) : (
-                  <Menu className="h-5 w-5" />
-                )}
-              </Button>
-            </div>
-
-            {/* User Menu */}
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage 
-                      src={user?.user_metadata?.avatar_url || ""} 
-                      alt={user?.user_metadata?.full_name || "Admin"} 
-                    />
-                    <AvatarFallback>
-                      {user?.user_metadata?.full_name?.charAt(0).toUpperCase() || "A"}
-                    </AvatarFallback>
-                  </Avatar>
+          {/* Mobile menu button */}
+          <div className="lg:hidden flex items-center">
+            <Sheet open={isOpen} onOpenChange={setIsOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel>Admin Panel</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/")}>
-                  Kembali ke Aplikasi Utama
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut()}>
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Keluar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+              </SheetTrigger>
+              <SheetContent side="right" className="w-64">
+                <div className="flex flex-col space-y-4 mt-8">
+                  <NavLinks mobile />
+                  
+                  <Button
+                    onClick={() => {
+                      signOut();
+                      setIsOpen(false);
+                    }}
+                    variant="ghost"
+                    className="flex items-center space-x-2 text-gray-700 hover:text-red-600 hover:bg-red-50 w-full justify-start px-3 py-2"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Keluar</span>
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
-
-        {/* Mobile Navigation */}
-        {isMobileMenuOpen && (
-          <div className="lg:hidden py-4 border-t border-white/20">
-            <nav className="space-y-2">
-              {navigationItems.map((item) => (
-                <Link
-                  key={item.name}
-                  to={item.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={cn(
-                    "flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                    isActiveRoute(item.href)
-                      ? "bg-white/20 text-white"
-                      : "text-white/80 hover:bg-white/10 hover:text-white"
-                  )}
-                >
-                  <item.icon className="h-4 w-4 mr-2" />
-                  {item.name}
-                </Link>
-              ))}
-              <div className="border-t border-white/20 pt-2 mt-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => signOut()}
-                  className="w-full justify-start text-white/80 hover:bg-white/10 hover:text-white"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Keluar
-                </Button>
-              </div>
-            </nav>
-          </div>
-        )}
       </div>
-    </div>
+    </nav>
   );
 };
 
