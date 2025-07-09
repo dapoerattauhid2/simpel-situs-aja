@@ -74,7 +74,7 @@ const ScheduleManagement = () => {
       const payload = {
         date: formData.date,
         cutoff_date: formData.cutoff_date || null,
-        cutoff_time: formData.cutoff_time || '05:00:00',
+        cutoff_time: formData.cutoff_time || '10:00:00',
         max_orders: formData.max_orders ? parseInt(formData.max_orders) : null,
         is_blocked: formData.is_blocked,
         notes: formData.notes || null
