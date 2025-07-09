@@ -36,7 +36,7 @@ const ScheduleManagement = () => {
   const [formData, setFormData] = useState({
     date: '',
     cutoff_date: '',
-    cutoff_time: 05:00',
+    cutoff_time: '05:00',
     max_orders: '',
     is_blocked: false,
     notes: ''
