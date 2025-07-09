@@ -61,10 +61,10 @@ export const useOrderSchedules = () => {
       
       if (new Date() > cutoffDate) return true;
     } else {
-      // Default: disable if it's past 05:00 on H+1
+      // Default: disable if it's past 08:00 on H+1
       const cutoffDate = new Date(date);
       cutoffDate.setDate(cutoffDate.getDate());
-      cutoffDate.setHours(5, 0, 0, 0);
+      cutoffDate.setHours(8, 0, 0, 0);
       
       if (new Date() > cutoffDate) return true;
     }
