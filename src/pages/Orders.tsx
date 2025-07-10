@@ -8,7 +8,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 
 const Orders = () => {
-  const { orders, loading, retryPayment, cancelOrder } = useOrders();
+  const { orders, loading, retryPayment } = useOrders();
   const [activeTab, setActiveTab] = useState('all');
 
   // Filter orders berdasarkan tab aktif
@@ -22,8 +22,6 @@ const Orders = () => {
         return orders.filter(order => order.status === 'preparing');
       case 'delivered':
         return orders.filter(order => order.status === 'delivered');
-      case 'cancelled':
-        return orders.filter(order => order.status === 'cancelled');
       default:
         return orders;
     }
@@ -71,7 +69,6 @@ const Orders = () => {
           <OrderFilters 
             orders={paginatedOrders} 
             onRetryPayment={retryPayment}
-            onCancelOrder={cancelOrder}
             activeTab={activeTab}
             onTabChange={setActiveTab}
           />

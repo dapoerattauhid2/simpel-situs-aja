@@ -2,7 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { User, X, CreditCard } from 'lucide-react';
+import { User } from 'lucide-react';
 import { Order } from '@/types/order';
 import { 
   getStatusColor, 
@@ -16,14 +16,9 @@ import {
 interface OrderCardProps {
   order: Order;
   onRetryPayment: (order: Order) => void;
-  onCancelOrder: (order: Order) => void;
 }
 
-export const OrderCard = ({ order, onRetryPayment, onCancelOrder }: OrderCardProps) => {
-  // Cek apakah order bisa dibatalkan (hanya jika payment pending atau status pending)
-  const canCancel = (order.payment_status === 'pending' || order.status === 'pending') && order.status !== 'cancelled';
-
-  return (
+export const OrderCard = ({ order, onRetryPayment }: OrderCardProps) => (
   <Card className="hover:shadow-lg transition-shadow">
     <CardHeader>
       <div className="flex justify-between items-start">
@@ -84,42 +79,16 @@ export const OrderCard = ({ order, onRetryPayment, onCancelOrder }: OrderCardPro
           </span>
         </div>
 
-        {/* Action Buttons */}
-        {order.payment_status === 'pending' && order.status !== 'cancelled' && (
-          <div className="flex gap-2">
-            <Button 
-              className="flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-              onClick={() => onRetryPayment(order)}
-            >
-              <CreditCard className="h-4 w-4 mr-2" />
-              Bayar Sekarang
-            </Button>
-            {canCancel && (
-              <Button 
-                variant="outline"
-                className="flex-1 border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-                onClick={() => onCancelOrder(order)}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Batalkan
-              </Button>
-            )}
-          </div>
-        )}
-
-        {/* Show cancel button only for pending orders that haven't been paid */}
-        {canCancel && order.payment_status !== 'pending' && (
+        {/* Payment Button */}
+        {order.payment_status === 'pending' && (
           <Button 
-            variant="outline"
-            className="w-full border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400"
-            onClick={() => onCancelOrder(order)}
+            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
+            onClick={() => onRetryPayment(order)}
           >
-            <X className="h-4 w-4 mr-2" />
-            Batalkan Pesanan
+            Bayar Sekarang
           </Button>
         )}
       </div>
     </CardContent>
   </Card>
-  );
-};
+);

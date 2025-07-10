@@ -168,50 +168,10 @@ export const useOrders = () => {
     }
   };
 
-  const cancelOrder = async (order: Order) => {
-    try {
-      // Hanya bisa cancel jika pembayaran masih pending atau order masih pending
-      if (order.payment_status !== 'pending' && order.status !== 'pending') {
-        toast({
-          title: "Tidak dapat dibatalkan",
-          description: "Pesanan yang sudah dibayar atau diproses tidak dapat dibatalkan",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const { error } = await supabase
-        .from('orders')
-        .update({ 
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', order.id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Pesanan Dibatalkan",
-        description: "Pesanan berhasil dibatalkan",
-      });
-
-      // Refresh orders setelah cancel
-      fetchOrders();
-    } catch (error: any) {
-      console.error('Cancel order error:', error);
-      toast({
-        title: "Error",
-        description: error.message || "Gagal membatalkan pesanan",
-        variant: "destructive",
-      });
-    }
-  };
-
   return {
     orders,
     loading,
     retryPayment,
-    cancelOrder,
     fetchOrders
   };
 };
