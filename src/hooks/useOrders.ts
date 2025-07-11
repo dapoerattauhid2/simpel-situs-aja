@@ -22,8 +22,10 @@ interface Order {
   status: string | null;
   payment_status: string | null;
   created_at: string;
+  delivery_date: string | null;
   notes: string | null;
   midtrans_order_id: string | null;
+  snap_token: string | null;
   order_items: OrderItem[];
 }
 
@@ -83,15 +85,60 @@ export const useOrders = () => {
 
   const retryPayment = async (order: Order) => {
     try {
-      // Generate new order ID if not exists
-      const orderId = order.midtrans_order_id || `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      // If snap_token exists, use it directly
+      if (order.snap_token) {
+        console.log('Using existing snap_token:', order.snap_token);
+        
+        if (window.snap) {
+          window.snap.pay(order.snap_token, {
+            onSuccess: () => {
+              toast({
+                title: "Pembayaran Berhasil!",
+                description: "Pembayaran berhasil diproses.",
+              });
+              fetchOrders();
+            },
+            onPending: () => {
+              toast({
+                title: "Menunggu Pembayaran",
+                description: "Pembayaran sedang diproses.",
+              });
+              fetchOrders();
+            },
+            onError: () => {
+              toast({
+                title: "Pembayaran Gagal",
+                description: "Terjadi kesalahan dalam pembayaran.",
+                variant: "destructive",
+              });
+            },
+            onClose: () => {
+              console.log('Payment popup closed');
+            }
+          });
+        } else {
+          throw new Error('Midtrans Snap belum loaded');
+        }
+        return;
+      }
+
+      // If no snap_token, create new payment
+      let orderId = order.midtrans_order_id;
       
-      // Update order with new midtrans_order_id if it was null
-      if (!order.midtrans_order_id) {
-        await supabase
+      if (!orderId) {
+        // Generate new order ID only if doesn't exist
+        orderId = `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Update order with new midtrans_order_id
+        const { error: updateError } = await supabase
           .from('orders')
           .update({ midtrans_order_id: orderId })
           .eq('id', order.id);
+          
+        if (updateError) {
+          console.error('Error updating order:', updateError);
+          throw updateError;
+        }
       }
 
       const customerDetails = {
@@ -107,7 +154,7 @@ export const useOrders = () => {
         name: item.menu_items?.name || 'Unknown Item',
       }));
 
-      console.log('Calling create-payment with:', {
+      console.log('Calling create-payment for new snap_token:', {
         orderId,
         amount: order.total_amount,
         customerDetails,
@@ -131,32 +178,49 @@ export const useOrders = () => {
         throw paymentError;
       }
 
-      if (window.snap && paymentData.snap_token) {
-        window.snap.pay(paymentData.snap_token, {
-          onSuccess: () => {
-            toast({
-              title: "Pembayaran Berhasil!",
-              description: "Pembayaran berhasil diproses.",
-            });
-            fetchOrders();
-          },
-          onPending: () => {
-            toast({
-              title: "Menunggu Pembayaran",
-              description: "Pembayaran sedang diproses.",
-            });
-            fetchOrders();
-          },
-          onError: () => {
-            toast({
-              title: "Pembayaran Gagal",
-              description: "Terjadi kesalahan dalam pembayaran.",
-              variant: "destructive",
-            });
-          }
-        });
+      if (paymentData.snap_token) {
+        // Save snap_token to database for future use
+        const { error: saveTokenError } = await supabase
+          .from('orders')
+          .update({ snap_token: paymentData.snap_token })
+          .eq('id', order.id);
+
+        if (saveTokenError) {
+          console.error('Error saving snap_token:', saveTokenError);
+        }
+
+        if (window.snap) {
+          window.snap.pay(paymentData.snap_token, {
+            onSuccess: () => {
+              toast({
+                title: "Pembayaran Berhasil!",
+                description: "Pembayaran berhasil diproses.",
+              });
+              fetchOrders();
+            },
+            onPending: () => {
+              toast({
+                title: "Menunggu Pembayaran",
+                description: "Pembayaran sedang diproses.",
+              });
+              fetchOrders();
+            },
+            onError: () => {
+              toast({
+                title: "Pembayaran Gagal",
+                description: "Terjadi kesalahan dalam pembayaran.",
+                variant: "destructive",
+              });
+            },
+            onClose: () => {
+              console.log('Payment popup closed');
+            }
+          });
+        } else {
+          throw new Error('Midtrans Snap belum loaded');
+        }
       } else {
-        throw new Error('Snap token tidak diterima atau Midtrans Snap belum loaded');
+        throw new Error('Snap token tidak diterima');
       }
     } catch (error: any) {
       console.error('Retry payment error:', error);
