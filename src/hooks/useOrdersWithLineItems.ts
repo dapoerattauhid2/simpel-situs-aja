@@ -49,6 +49,8 @@ export const useOrdersWithLineItems = () => {
 
   const fetchOrdersWithLineItems = async () => {
     try {
+      console.log('Fetching orders with line items for user:', user?.id);
+
       const { data, error } = await supabase
         .from('orders')
         .select(`
@@ -76,15 +78,21 @@ export const useOrdersWithLineItems = () => {
 
       if (error) throw error;
       
-      const transformedOrders = (data || []).map(order => ({
-        ...order,
-        order_line_items: order.order_line_items.map((item: any) => ({
-          ...item,
-          menu_items: item.menu_items || { name: 'Unknown Item', image_url: '' }
-        }))
-      }));
+      console.log('Raw orders data:', data);
       
-      setOrders(transformedOrders);
+      // Filter orders that have line items (batch orders) and transform data
+      const batchOrders = (data || [])
+        .filter(order => order.order_line_items && order.order_line_items.length > 0)
+        .map(order => ({
+          ...order,
+          order_line_items: order.order_line_items.map((item: any) => ({
+            ...item,
+            menu_items: item.menu_items || { name: 'Unknown Item', image_url: '' }
+          }))
+        }));
+      
+      console.log('Filtered batch orders:', batchOrders);
+      setOrders(batchOrders);
     } catch (error) {
       console.error('Error fetching orders with line items:', error);
       toast({
@@ -99,7 +107,10 @@ export const useOrdersWithLineItems = () => {
 
   const retryPayment = async (order: OrderWithLineItems) => {
     try {
+      console.log('Retrying payment for order:', order.id);
+
       if (order.snap_token) {
+        console.log('Using existing snap token');
         if ((window as any).snap) {
           (window as any).snap.pay(order.snap_token, {
             onSuccess: () => {
@@ -157,6 +168,8 @@ export const useOrdersWithLineItems = () => {
         quantity: item.quantity,
         name: `${item.menu_items?.name || 'Unknown Item'} - ${item.child_name}`,
       }));
+
+      console.log('Creating payment with details:', { orderId, amount: order.total_amount, itemDetails });
 
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         'create-payment',

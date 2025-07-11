@@ -120,7 +120,9 @@ export const useBatchCart = () => {
       const totalAmount = getTotalAmount();
       const orderId = `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-      // Create main order
+      console.log('Creating batch order with items:', cartItems);
+
+      // Create main order - SINGLE ORDER for all items
       const orderData = {
         user_id: user?.id,
         total_amount: totalAmount,
@@ -128,8 +130,11 @@ export const useBatchCart = () => {
         status: 'pending',
         payment_status: 'pending',
         order_number: orderId,
-        midtrans_order_id: orderId
+        midtrans_order_id: orderId,
+        order_date: new Date().toISOString().split('T')[0] // Today's date as order date
       };
+
+      console.log('Creating order with data:', orderData);
 
       const { data: order, error: orderError } = await supabase
         .from('orders')
@@ -139,7 +144,9 @@ export const useBatchCart = () => {
 
       if (orderError) throw orderError;
 
-      // Create order line items
+      console.log('Order created successfully:', order);
+
+      // Create order line items - ALL items go to the SAME order
       const orderLineItems = cartItems.map(item => ({
         order_id: order.id,
         menu_item_id: item.menu_item_id,
@@ -147,10 +154,13 @@ export const useBatchCart = () => {
         child_name: item.child_name,
         child_class: item.child_class,
         delivery_date: item.delivery_date,
+        order_date: new Date().toISOString().split('T')[0],
         quantity: item.quantity,
         unit_price: item.price,
         notes: item.notes
       }));
+
+      console.log('Creating order line items:', orderLineItems);
 
       const { error: lineItemsError } = await supabase
         .from('order_line_items')
@@ -158,7 +168,9 @@ export const useBatchCart = () => {
 
       if (lineItemsError) throw lineItemsError;
 
-      // Create old format order items for compatibility
+      console.log('Order line items created successfully');
+
+      // Create old format order items for compatibility (using first item as representative)
       const orderItems = cartItems.map(item => ({
         order_id: order.id,
         menu_item_id: item.menu_item_id,
@@ -171,6 +183,8 @@ export const useBatchCart = () => {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      console.log('Legacy order items created successfully');
 
       // Prepare payment data
       const customerDetails = {
@@ -186,6 +200,8 @@ export const useBatchCart = () => {
         name: `${item.name} - ${item.child_name} (${item.delivery_date})`,
       }));
 
+      console.log('Creating payment for order:', orderId, 'Amount:', totalAmount);
+
       // Create payment transaction
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         'create-payment',
@@ -200,6 +216,8 @@ export const useBatchCart = () => {
       );
 
       if (paymentError) throw paymentError;
+
+      console.log('Payment created successfully:', paymentData);
 
       // Save snap token to database
       if (paymentData.snap_token) {
