@@ -1,7 +1,6 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { User, Calendar, MapPin } from 'lucide-react';
 import { Order } from '@/types/order';
 import { 
@@ -15,10 +14,9 @@ import {
 
 interface OrderCardProps {
   order: Order;
-  onRetryPayment: (order: Order) => void;
 }
 
-export const OrderCard = ({ order, onRetryPayment }: OrderCardProps) => (
+export const OrderCard = ({ order }: OrderCardProps) => (
   <Card className="hover:shadow-lg transition-shadow">
     <CardHeader>
       <div className="flex justify-between items-start">
@@ -115,14 +113,13 @@ export const OrderCard = ({ order, onRetryPayment }: OrderCardProps) => (
           </div>
         )}
 
-        {/* Payment Button */}
+        {/* Payment Status Note */}
         {order.payment_status === 'pending' && (
-          <Button 
-            className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-            onClick={() => onRetryPayment(order)}
-          >
-            {order.midtrans_order_id ? 'Lanjutkan Pembayaran' : 'Bayar Sekarang'}
-          </Button>
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-800">
+              <strong>Status:</strong> Menunggu pembayaran batch - gunakan tombol "Bayar Semua Pesanan" di atas untuk melakukan pembayaran.
+            </p>
+          </div>
         )}
       </div>
     </CardContent>

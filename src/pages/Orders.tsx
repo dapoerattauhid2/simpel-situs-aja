@@ -2,13 +2,13 @@
 import { useOrders } from '@/hooks/useOrders';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { EmptyOrdersState } from '@/components/orders/EmptyOrdersState';
+import { BatchPaymentButton } from '@/components/orders/BatchPaymentButton';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
 
 const Orders = () => {
-  const { orders, loading, retryPayment } = useOrders();
+  const { orders, loading, fetchOrders } = useOrders();
   const [activeTab, setActiveTab] = useState('all');
 
   // Filter orders berdasarkan tab aktif
@@ -45,6 +45,10 @@ const Orders = () => {
     itemsPerPage: 12
   });
 
+  const handlePaymentSuccess = () => {
+    fetchOrders();
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen">
@@ -66,9 +70,14 @@ const Orders = () => {
         <EmptyOrdersState />
       ) : (
         <>
+          {/* Batch Payment Button */}
+          <BatchPaymentButton 
+            orders={filteredOrders} 
+            onPaymentSuccess={handlePaymentSuccess}
+          />
+          
           <OrderFilters 
             orders={paginatedOrders} 
-            onRetryPayment={retryPayment}
             activeTab={activeTab}
             onTabChange={setActiveTab}
           />
