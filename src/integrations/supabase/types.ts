@@ -240,7 +240,6 @@ export type Database = {
           order_number: string
           payment_method: string | null
           payment_status: string | null
-          snap_token: string | null
           status: string | null
           total_amount: number
           transaction_id: string | null
@@ -258,7 +257,6 @@ export type Database = {
           order_number: string
           payment_method?: string | null
           payment_status?: string | null
-          snap_token?: string | null
           status?: string | null
           total_amount: number
           transaction_id?: string | null
@@ -276,7 +274,6 @@ export type Database = {
           order_number?: string
           payment_method?: string | null
           payment_status?: string | null
-          snap_token?: string | null
           status?: string | null
           total_amount?: number
           transaction_id?: string | null
