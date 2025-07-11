@@ -5,14 +5,15 @@ import { Order } from '@/types/order';
 import { useBatchPayment } from '@/hooks/useBatchPayment';
 
 interface BatchPaymentButtonProps {
-  orders: Order[];
+  selectedOrders: Order[];
   onPaymentSuccess?: () => void;
+  disabled?: boolean;
 }
 
-export const BatchPaymentButton = ({ orders, onPaymentSuccess }: BatchPaymentButtonProps) => {
+export const BatchPaymentButton = ({ selectedOrders, onPaymentSuccess, disabled }: BatchPaymentButtonProps) => {
   const { loading, processBatchPayment } = useBatchPayment();
 
-  const pendingOrders = orders.filter(order => order.payment_status === 'pending');
+  const pendingOrders = selectedOrders.filter(order => order.payment_status === 'pending');
   const totalAmount = pendingOrders.reduce((sum, order) => sum + order.total_amount, 0);
 
   const formatPrice = (price: number) => {
@@ -33,7 +34,7 @@ export const BatchPaymentButton = ({ orders, onPaymentSuccess }: BatchPaymentBut
         <div>
           <h3 className="font-semibold text-orange-800">Pembayaran Batch</h3>
           <p className="text-sm text-orange-600">
-            {pendingOrders.length} pesanan menunggu pembayaran
+            {pendingOrders.length} pesanan dipilih untuk pembayaran
           </p>
         </div>
         <div className="text-right">
@@ -46,7 +47,7 @@ export const BatchPaymentButton = ({ orders, onPaymentSuccess }: BatchPaymentBut
       
       <Button
         onClick={() => processBatchPayment(pendingOrders, onPaymentSuccess)}
-        disabled={loading}
+        disabled={loading || disabled}
         className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
         size="lg"
       >
@@ -58,7 +59,7 @@ export const BatchPaymentButton = ({ orders, onPaymentSuccess }: BatchPaymentBut
         ) : (
           <>
             <CreditCard className="h-5 w-5 mr-2" />
-            Bayar Semua Pesanan ({pendingOrders.length})
+            Bayar Pesanan Terpilih ({pendingOrders.length})
           </>
         )}
       </Button>

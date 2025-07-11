@@ -3,6 +3,7 @@ import { useOrders } from '@/hooks/useOrders';
 import { OrderFilters } from '@/components/orders/OrderFilters';
 import { EmptyOrdersState } from '@/components/orders/EmptyOrdersState';
 import { BatchPaymentButton } from '@/components/orders/BatchPaymentButton';
+import { OrderSelectionControls } from '@/components/orders/OrderSelectionControls';
 import { usePagination } from '@/hooks/usePagination';
 import { PaginationControls } from '@/components/ui/pagination-controls';
 import { useState } from 'react';
@@ -10,6 +11,7 @@ import { useState } from 'react';
 const Orders = () => {
   const { orders, loading, fetchOrders } = useOrders();
   const [activeTab, setActiveTab] = useState('all');
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
 
   // Filter orders berdasarkan tab aktif
   const getFilteredOrders = () => {
@@ -28,6 +30,7 @@ const Orders = () => {
   };
 
   const filteredOrders = getFilteredOrders();
+  const selectedOrders = orders.filter(order => selectedOrderIds.includes(order.id));
 
   // Pagination
   const {
@@ -46,7 +49,31 @@ const Orders = () => {
   });
 
   const handlePaymentSuccess = () => {
+    setSelectedOrderIds([]);
     fetchOrders();
+  };
+
+  const handleSelectAll = () => {
+    setSelectedOrderIds(paginatedOrders.map(order => order.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedOrderIds([]);
+  };
+
+  const handleSelectPending = () => {
+    const pendingOrderIds = paginatedOrders
+      .filter(order => order.payment_status === 'pending')
+      .map(order => order.id);
+    setSelectedOrderIds(pendingOrderIds);
+  };
+
+  const handleOrderSelection = (orderId: string, selected: boolean) => {
+    if (selected) {
+      setSelectedOrderIds(prev => [...prev, orderId]);
+    } else {
+      setSelectedOrderIds(prev => prev.filter(id => id !== orderId));
+    }
   };
 
   if (loading) {
@@ -72,14 +99,25 @@ const Orders = () => {
         <>
           {/* Batch Payment Button */}
           <BatchPaymentButton 
-            orders={filteredOrders} 
+            selectedOrders={selectedOrders} 
             onPaymentSuccess={handlePaymentSuccess}
+          />
+          
+          {/* Order Selection Controls */}
+          <OrderSelectionControls
+            orders={paginatedOrders}
+            selectedOrders={selectedOrders}
+            onSelectAll={handleSelectAll}
+            onDeselectAll={handleDeselectAll}
+            onSelectPending={handleSelectPending}
           />
           
           <OrderFilters 
             orders={paginatedOrders} 
             activeTab={activeTab}
             onTabChange={setActiveTab}
+            selectedOrderIds={selectedOrderIds}
+            onOrderSelection={handleOrderSelection}
           />
           
           {/* Pagination Controls */}

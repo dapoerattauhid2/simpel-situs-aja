@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Checkbox } from '@/components/ui/checkbox';
 import { User, Calendar, MapPin } from 'lucide-react';
 import { Order } from '@/types/order';
 import { 
@@ -14,32 +15,44 @@ import {
 
 interface OrderCardProps {
   order: Order;
+  isSelected?: boolean;
+  onSelectionChange?: (orderId: string, selected: boolean) => void;
+  showCheckbox?: boolean;
 }
 
-export const OrderCard = ({ order }: OrderCardProps) => (
-  <Card className="hover:shadow-lg transition-shadow">
+export const OrderCard = ({ order, isSelected = false, onSelectionChange, showCheckbox = false }: OrderCardProps) => (
+  <Card className={`hover:shadow-lg transition-shadow ${isSelected ? 'ring-2 ring-orange-500' : ''}`}>
     <CardHeader>
       <div className="flex justify-between items-start">
-        <div className="space-y-2">
-          <CardTitle className="text-lg flex items-center">
-            <User className="h-5 w-5 mr-2 text-orange-600" />
-            {order.child_name}
-          </CardTitle>
-          <CardDescription className="space-y-1">
-            <div className="flex items-center text-sm text-gray-600">
-              <span>Kelas {order.child_class}</span>
-            </div>
-            {order.delivery_date && (
+        <div className="flex items-start space-x-3 flex-1">
+          {showCheckbox && (
+            <Checkbox
+              checked={isSelected}
+              onCheckedChange={(checked) => onSelectionChange?.(order.id, !!checked)}
+              className="mt-1"
+            />
+          )}
+          <div className="space-y-2 flex-1">
+            <CardTitle className="text-lg flex items-center">
+              <User className="h-5 w-5 mr-2 text-orange-600" />
+              {order.child_name}
+            </CardTitle>
+            <CardDescription className="space-y-1">
               <div className="flex items-center text-sm text-gray-600">
-                <Calendar className="h-4 w-4 mr-1" />
-                Tanggal Pengiriman: {formatDate(order.delivery_date)}
+                <span>Kelas {order.child_class}</span>
               </div>
-            )}
-            <div className="flex items-center text-sm text-gray-600">
-              <MapPin className="h-4 w-4 mr-1" />
-              Dipesan: {formatDate(order.created_at)}
-            </div>
-          </CardDescription>
+              {order.delivery_date && (
+                <div className="flex items-center text-sm text-gray-600">
+                  <Calendar className="h-4 w-4 mr-1" />
+                  Tanggal Pengiriman: {formatDate(order.delivery_date)}
+                </div>
+              )}
+              <div className="flex items-center text-sm text-gray-600">
+                <MapPin className="h-4 w-4 mr-1" />
+                Dipesan: {formatDate(order.created_at)}
+              </div>
+            </CardDescription>
+          </div>
         </div>
         <div className="text-right space-y-1">
           <Badge className={getStatusColor(order.status)}>

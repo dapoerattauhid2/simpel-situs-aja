@@ -7,9 +7,17 @@ interface OrderFiltersProps {
   orders: Order[];
   activeTab: string;
   onTabChange: (tab: string) => void;
+  selectedOrderIds?: string[];
+  onOrderSelection?: (orderId: string, selected: boolean) => void;
 }
 
-export const OrderFilters = ({ orders, activeTab, onTabChange }: OrderFiltersProps) => {
+export const OrderFilters = ({ 
+  orders, 
+  activeTab, 
+  onTabChange, 
+  selectedOrderIds = [],
+  onOrderSelection 
+}: OrderFiltersProps) => {
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="w-full">
       <TabsList className="grid w-full grid-cols-5 mb-4 md:mb-6 h-8 md:h-10">
@@ -23,7 +31,13 @@ export const OrderFilters = ({ orders, activeTab, onTabChange }: OrderFiltersPro
       <TabsContent value={activeTab}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-6">
           {orders.map((order) => (
-            <OrderCard key={order.id} order={order} />
+            <OrderCard 
+              key={order.id} 
+              order={order}
+              isSelected={selectedOrderIds.includes(order.id)}
+              onSelectionChange={onOrderSelection}
+              showCheckbox={true}
+            />
           ))}
         </div>
       </TabsContent>
