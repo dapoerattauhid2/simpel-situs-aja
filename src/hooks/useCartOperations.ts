@@ -168,8 +168,8 @@ export const useCartOperations = () => {
       if (paymentError) throw paymentError;
 
       // Open Midtrans Snap
-      if ((window as any).snap && paymentData.snap_token) {
-        (window as any).snap.pay(paymentData.snap_token, {
+      if (window.snap && paymentData.snap_token) {
+        window.snap.pay(paymentData.snap_token, {
           onSuccess: (result) => {
             console.log('Payment success:', result);
             toast({
