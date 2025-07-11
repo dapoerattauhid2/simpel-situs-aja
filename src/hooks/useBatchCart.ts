@@ -202,17 +202,9 @@ export const useBatchCart = () => {
 
       if (paymentError) throw paymentError;
 
-      // Save snap_token to database
-      if (paymentData.snap_token) {
-        await supabase
-          .from('orders')
-          .update({ snap_token: paymentData.snap_token })
-          .eq('id', masterOrder.id);
-      }
-
       // Open Midtrans Snap
-      if (window.snap && paymentData.snap_token) {
-        window.snap.pay(paymentData.snap_token, {
+      if ((window as any).snap && paymentData.snap_token) {
+        (window as any).snap.pay(paymentData.snap_token, {
           onSuccess: (result) => {
             console.log('Batch payment success:', result);
             toast({

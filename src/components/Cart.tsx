@@ -7,9 +7,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { CartItemList } from '@/components/cart/CartItemList';
-import { OrderSummary } from '@/components/cart/OrderSummary';
-import { CheckoutForm } from '@/components/cart/CheckoutForm';
+import CartItemList from '@/components/cart/CartItemList';
+import OrderSummary from '@/components/cart/OrderSummary';
+import CheckoutForm from '@/components/cart/CheckoutForm';
 import { BatchCartModal } from '@/components/cart/BatchCartModal';
 import { useCartOperations } from '@/hooks/useCartOperations';
 import { useBatchCart } from '@/hooks/useBatchCart';
@@ -120,9 +120,16 @@ const Cart = ({
                   items={items}
                   onUpdateQuantity={onUpdateQuantity}
                   onRemoveItem={onRemoveItem}
+                  formatPrice={(price) => `Rp ${price.toLocaleString('id-ID')}`}
                 />
 
-                <OrderSummary totalAmount={totalAmount} />
+                <OrderSummary 
+                  totalPrice={totalAmount}
+                  formatPrice={(price) => `Rp ${price.toLocaleString('id-ID')}`}
+                  onCheckout={handleSingleCheckout}
+                  loading={cartLoading}
+                  canCheckout={!!selectedChildId}
+                />
 
                 <CheckoutForm
                   children={children}
