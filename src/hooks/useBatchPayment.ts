@@ -73,6 +73,8 @@ export const useBatchPayment = () => {
       console.log('Creating batch payment with single order ID:', batchOrderId);
       console.log('Original orders to be batched:', pendingOrders.map(o => o.id));
       console.log('Total amount:', totalAmount);
+      console.log('Customer details:', customerDetails);
+      console.log('Item details:', itemDetails);
 
       // Create the batch payment with Midtrans
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
@@ -90,38 +92,55 @@ export const useBatchPayment = () => {
 
       if (paymentError) {
         console.error('Batch payment error:', paymentError);
-        throw paymentError;
+        throw new Error(paymentError.message || 'Failed to create batch payment');
+      }
+
+      if (!paymentData) {
+        throw new Error('No payment data received from server');
+      }
+
+      if (paymentData.error) {
+        throw new Error(paymentData.error);
       }
 
       if (paymentData.snap_token) {
+        console.log('Received snap token:', paymentData.snap_token);
+        
         // Update all original orders with the batch information
         for (const order of pendingOrders) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('orders')
             .update({ 
               snap_token: paymentData.snap_token,
               midtrans_order_id: batchOrderId // All orders reference the same batch ID
             })
             .eq('id', order.id);
+            
+          if (updateError) {
+            console.error('Error updating order:', order.id, updateError);
+          }
         }
 
         if (window.snap) {
           window.snap.pay(paymentData.snap_token, {
-            onSuccess: () => {
+            onSuccess: (result) => {
+              console.log('Batch payment success:', result);
               toast({
                 title: "Pembayaran Batch Berhasil!",
                 description: `Berhasil membayar ${pendingOrders.length} pesanan sekaligus dengan ID: ${batchOrderId}`,
               });
               onSuccess?.();
             },
-            onPending: () => {
+            onPending: (result) => {
+              console.log('Batch payment pending:', result);
               toast({
                 title: "Menunggu Pembayaran Batch",
                 description: `Pembayaran batch dengan ID ${batchOrderId} sedang diproses.`,
               });
               onSuccess?.();
             },
-            onError: () => {
+            onError: (result) => {
+              console.error('Batch payment error:', result);
               toast({
                 title: "Pembayaran Batch Gagal",
                 description: "Terjadi kesalahan dalam pembayaran batch.",

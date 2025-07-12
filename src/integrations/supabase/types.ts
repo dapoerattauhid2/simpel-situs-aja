@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      batch_orders: {
+        Row: {
+          batch_id: string
+          created_at: string
+          id: string
+          order_id: string
+        }
+        Insert: {
+          batch_id: string
+          created_at?: string
+          id?: string
+          order_id: string
+        }
+        Update: {
+          batch_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "batch_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       cash_payments: {
         Row: {
           amount: number

@@ -13,38 +13,49 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, amount, customerDetails, itemDetails, batchOrderIds } = await req.json();
+    const requestBody = await req.json();
+    const { orderId, amount, customerDetails, itemDetails, batchOrderIds } = requestBody;
 
     console.log('Creating payment for order:', orderId);
-    console.log('Batch order IDs:', batchOrderIds);
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
 
     // Validate required fields
     if (!orderId) {
+      console.error('Order ID is missing');
       throw new Error('Order ID is required');
     }
 
     if (!amount || amount <= 0) {
+      console.error('Invalid amount:', amount);
       throw new Error('Valid amount is required');
     }
 
     const serverKey = Deno.env.get('MIDTRANS_SERVER_KEY');
     if (!serverKey) {
+      console.error('Midtrans server key not configured');
       throw new Error('Midtrans server key not configured');
     }
 
-    // If this is a batch payment, save the batch mapping
+    console.log('Server key found, proceeding with Midtrans');
+
+    // If this is a batch payment, save the batch mapping first
     if (batchOrderIds && batchOrderIds.length > 0) {
+      console.log('Processing batch payment for orders:', batchOrderIds);
+      
       const supabaseUrl = Deno.env.get('SUPABASE_URL');
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       
       if (supabaseUrl && supabaseServiceKey) {
+        console.log('Saving batch mapping to database');
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
         
         // Save batch order mapping
-        const batchMappings = batchOrderIds.map(originalOrderId => ({
+        const batchMappings = batchOrderIds.map((originalOrderId: string) => ({
           batch_id: orderId,
           order_id: originalOrderId
         }));
+        
+        console.log('Batch mappings to insert:', batchMappings);
         
         const { error: batchError } = await supabase
           .from('batch_orders')
@@ -52,44 +63,71 @@ serve(async (req) => {
           
         if (batchError) {
           console.error('Error saving batch mapping:', batchError);
+          throw new Error(`Failed to save batch mapping: ${batchError.message}`);
         } else {
           console.log('Batch mapping saved successfully');
         }
+      } else {
+        console.error('Supabase configuration missing for batch mapping');
       }
     }
 
-    // Create Midtrans transaction with single order_id
+    // Prepare default customer details if not provided
+    const defaultCustomerDetails = {
+      first_name: 'Customer',
+      email: 'customer@example.com',
+      phone: '08123456789',
+    };
+
+    const finalCustomerDetails = { ...defaultCustomerDetails, ...customerDetails };
+    console.log('Customer details:', finalCustomerDetails);
+
+    // Prepare default item details if not provided
+    const finalItemDetails = itemDetails && itemDetails.length > 0 ? itemDetails : [
+      {
+        id: orderId,
+        price: amount,
+        quantity: 1,
+        name: 'Payment',
+      }
+    ];
+
+    console.log('Item details:', finalItemDetails);
+
+    // Create Midtrans transaction
+    const midtransPayload = {
+      transaction_details: {
+        order_id: orderId,
+        gross_amount: amount,
+      },
+      customer_details: finalCustomerDetails,
+      item_details: finalItemDetails,
+      credit_card: {
+        secure: true,
+      },
+    };
+
+    console.log('Midtrans payload:', JSON.stringify(midtransPayload, null, 2));
+
     const midtransResponse = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Basic ${btoa(serverKey + ':')}`,
       },
-      body: JSON.stringify({
-        transaction_details: {
-          order_id: orderId,
-          gross_amount: amount,
-        },
-        customer_details: customerDetails || {
-          first_name: 'Customer',
-          email: 'customer@example.com',
-          phone: '08123456789',
-        },
-        item_details: itemDetails || [],
-        credit_card: {
-          secure: true,
-        },
-      }),
+      body: JSON.stringify(midtransPayload),
     });
+
+    console.log('Midtrans response status:', midtransResponse.status);
 
     if (!midtransResponse.ok) {
       const errorText = await midtransResponse.text();
-      console.error('Midtrans error:', errorText);
-      throw new Error(`Midtrans API error: ${errorText}`);
+      console.error('Midtrans error response:', errorText);
+      throw new Error(`Midtrans API error: ${midtransResponse.status} - ${errorText}`);
     }
 
     const midtransData = await midtransResponse.json();
-    console.log('Midtrans response:', midtransData);
+    console.log('Midtrans success response:', midtransData);
 
     return new Response(
       JSON.stringify({
@@ -101,9 +139,12 @@ serve(async (req) => {
       }
     );
   } catch (error) {
-    console.error('Error creating payment:', error);
+    console.error('Error in create-payment function:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message || 'An unexpected error occurred',
+        details: error.toString()
+      }),
       {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
