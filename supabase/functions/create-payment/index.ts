@@ -13,9 +13,10 @@ serve(async (req) => {
   }
 
   try {
-    const { orderId, amount, customerDetails, itemDetails } = await req.json();
+    const { orderId, amount, customerDetails, itemDetails, batchOrderIds } = await req.json();
 
     console.log('Creating payment for order:', orderId);
+    console.log('Batch order IDs:', batchOrderIds);
 
     // Validate required fields
     if (!orderId) {
@@ -31,7 +32,33 @@ serve(async (req) => {
       throw new Error('Midtrans server key not configured');
     }
 
-    // Create Midtrans transaction
+    // If this is a batch payment, save the batch mapping
+    if (batchOrderIds && batchOrderIds.length > 0) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL');
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      
+      if (supabaseUrl && supabaseServiceKey) {
+        const supabase = createClient(supabaseUrl, supabaseServiceKey);
+        
+        // Save batch order mapping
+        const batchMappings = batchOrderIds.map(originalOrderId => ({
+          batch_id: orderId,
+          order_id: originalOrderId
+        }));
+        
+        const { error: batchError } = await supabase
+          .from('batch_orders')
+          .insert(batchMappings);
+          
+        if (batchError) {
+          console.error('Error saving batch mapping:', batchError);
+        } else {
+          console.log('Batch mapping saved successfully');
+        }
+      }
+    }
+
+    // Create Midtrans transaction with single order_id
     const midtransResponse = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
       method: 'POST',
       headers: {

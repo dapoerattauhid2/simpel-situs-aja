@@ -34,7 +34,10 @@ export const BatchPaymentButton = ({ selectedOrders, onPaymentSuccess, disabled 
         <div>
           <h3 className="font-semibold text-orange-800">Pembayaran Batch</h3>
           <p className="text-sm text-orange-600">
-            {pendingOrders.length} pesanan dipilih untuk pembayaran
+            {pendingOrders.length} pesanan akan digabung menjadi satu invoice
+          </p>
+          <p className="text-xs text-gray-500 mt-1">
+            Sistem akan membuat satu transaksi Midtrans untuk semua pesanan terpilih
           </p>
         </div>
         <div className="text-right">
@@ -59,7 +62,7 @@ export const BatchPaymentButton = ({ selectedOrders, onPaymentSuccess, disabled 
         ) : (
           <>
             <CreditCard className="h-5 w-5 mr-2" />
-            Bayar Pesanan Terpilih ({pendingOrders.length})
+            Bayar Batch ({pendingOrders.length} pesanan)
           </>
         )}
       </Button>

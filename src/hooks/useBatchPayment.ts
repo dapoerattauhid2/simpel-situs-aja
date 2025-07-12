@@ -47,6 +47,8 @@ export const useBatchPayment = () => {
 
     try {
       const totalAmount = pendingOrders.reduce((sum, order) => sum + order.total_amount, 0);
+      
+      // Generate batch order ID following Midtrans single-order requirement
       const batchOrderId = `BATCH-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
       const customerDetails = {
@@ -55,7 +57,7 @@ export const useBatchPayment = () => {
         phone: user?.user_metadata?.phone || '08123456789',
       };
 
-      // Create combined item details from all orders
+      // Create combined item details from all orders for the invoice
       const itemDetails = [];
       for (const order of pendingOrders) {
         for (const item of order.order_items) {
@@ -68,19 +70,20 @@ export const useBatchPayment = () => {
         }
       }
 
-      console.log('Creating batch payment for orders:', pendingOrders.map(o => o.id));
+      console.log('Creating batch payment with single order ID:', batchOrderId);
+      console.log('Original orders to be batched:', pendingOrders.map(o => o.id));
       console.log('Total amount:', totalAmount);
-      console.log('Item details:', itemDetails);
 
+      // Create the batch payment with Midtrans
       const { data: paymentData, error: paymentError } = await supabase.functions.invoke(
         'create-payment',
         {
           body: {
-            orderId: batchOrderId,
+            orderId: batchOrderId, // Single batch order ID for Midtrans
             amount: totalAmount,
             customerDetails,
             itemDetails,
-            batchOrderIds: pendingOrders.map(order => order.id), // Send order IDs for batch update
+            batchOrderIds: pendingOrders.map(order => order.id), // Original order IDs for mapping
           },
         }
       );
@@ -91,13 +94,13 @@ export const useBatchPayment = () => {
       }
 
       if (paymentData.snap_token) {
-        // Update all orders with the same snap_token for batch payment tracking
+        // Update all original orders with the batch information
         for (const order of pendingOrders) {
           await supabase
             .from('orders')
             .update({ 
               snap_token: paymentData.snap_token,
-              midtrans_order_id: batchOrderId
+              midtrans_order_id: batchOrderId // All orders reference the same batch ID
             })
             .eq('id', order.id);
         }
@@ -107,14 +110,14 @@ export const useBatchPayment = () => {
             onSuccess: () => {
               toast({
                 title: "Pembayaran Batch Berhasil!",
-                description: `Berhasil membayar ${pendingOrders.length} pesanan sekaligus.`,
+                description: `Berhasil membayar ${pendingOrders.length} pesanan sekaligus dengan ID: ${batchOrderId}`,
               });
               onSuccess?.();
             },
             onPending: () => {
               toast({
                 title: "Menunggu Pembayaran Batch",
-                description: "Pembayaran batch sedang diproses.",
+                description: `Pembayaran batch dengan ID ${batchOrderId} sedang diproses.`,
               });
               onSuccess?.();
             },

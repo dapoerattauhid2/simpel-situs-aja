@@ -117,8 +117,20 @@ export const OrderCard = ({ order, isSelected = false, onSelectionChange, showCh
           </div>
         </div>
 
-        {/* Payment Information */}
-        {order.midtrans_order_id && (
+        {/* Batch Payment Information */}
+        {order.midtrans_order_id && order.midtrans_order_id.startsWith('BATCH-') && (
+          <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+            <p className="text-sm text-blue-800">
+              <strong>Batch Payment ID:</strong> {order.midtrans_order_id}
+            </p>
+            <p className="text-xs text-blue-600 mt-1">
+              Pesanan ini merupakan bagian dari pembayaran batch
+            </p>
+          </div>
+        )}
+
+        {/* Regular Payment Information */}
+        {order.midtrans_order_id && !order.midtrans_order_id.startsWith('BATCH-') && (
           <div className="p-3 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-600">
               <strong>Order ID:</strong> {order.midtrans_order_id}
@@ -130,7 +142,7 @@ export const OrderCard = ({ order, isSelected = false, onSelectionChange, showCh
         {order.payment_status === 'pending' && (
           <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <p className="text-sm text-yellow-800">
-              <strong>Status:</strong> Menunggu pembayaran batch - gunakan tombol "Bayar Semua Pesanan" di atas untuk melakukan pembayaran.
+              <strong>Status:</strong> Menunggu pembayaran - pilih pesanan ini untuk pembayaran batch atau bayar individual.
             </p>
           </div>
         )}
