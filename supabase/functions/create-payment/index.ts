@@ -13,11 +13,28 @@ serve(async (req) => {
   }
 
   try {
-    const requestBody = await req.json();
+    console.log('=== CREATE PAYMENT FUNCTION START ===');
+    console.log('Method:', req.method);
+    console.log('Headers:', Object.fromEntries(req.headers.entries()));
+
+    let requestBody;
+    try {
+      requestBody = await req.json();
+      console.log('Request body received:', JSON.stringify(requestBody, null, 2));
+    } catch (parseError) {
+      console.error('Failed to parse JSON body:', parseError);
+      throw new Error('Invalid JSON in request body');
+    }
+
     const { orderId, amount, customerDetails, itemDetails, batchOrderIds } = requestBody;
 
-    console.log('Creating payment for order:', orderId);
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+    console.log('Extracted parameters:', {
+      orderId,
+      amount,
+      customerDetails,
+      itemDetails: itemDetails ? `${itemDetails.length} items` : 'none',
+      batchOrderIds: batchOrderIds ? `${batchOrderIds.length} orders` : 'none'
+    });
 
     // Validate required fields
     if (!orderId) {
@@ -57,18 +74,25 @@ serve(async (req) => {
         
         console.log('Batch mappings to insert:', batchMappings);
         
-        const { error: batchError } = await supabase
-          .from('batch_orders')
-          .insert(batchMappings);
-          
-        if (batchError) {
-          console.error('Error saving batch mapping:', batchError);
-          throw new Error(`Failed to save batch mapping: ${batchError.message}`);
-        } else {
-          console.log('Batch mapping saved successfully');
+        try {
+          const { error: batchError } = await supabase
+            .from('batch_orders')
+            .insert(batchMappings);
+            
+          if (batchError) {
+            console.error('Error saving batch mapping:', batchError);
+            throw new Error(`Failed to save batch mapping: ${batchError.message}`);
+          } else {
+            console.log('Batch mapping saved successfully');
+          }
+        } catch (dbError) {
+          console.error('Database error during batch mapping:', dbError);
+          throw new Error(`Database error: ${dbError.message}`);
         }
       } else {
         console.error('Supabase configuration missing for batch mapping');
+        console.error('SUPABASE_URL:', supabaseUrl ? 'present' : 'missing');
+        console.error('SUPABASE_SERVICE_ROLE_KEY:', supabaseServiceKey ? 'present' : 'missing');
       }
     }
 
@@ -109,41 +133,52 @@ serve(async (req) => {
 
     console.log('Midtrans payload:', JSON.stringify(midtransPayload, null, 2));
 
-    const midtransResponse = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Basic ${btoa(serverKey + ':')}`,
-      },
-      body: JSON.stringify(midtransPayload),
-    });
+    try {
+      const midtransResponse = await fetch('https://app.sandbox.midtrans.com/snap/v1/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${btoa(serverKey + ':')}`,
+        },
+        body: JSON.stringify(midtransPayload),
+      });
 
-    console.log('Midtrans response status:', midtransResponse.status);
+      console.log('Midtrans response status:', midtransResponse.status);
 
-    if (!midtransResponse.ok) {
-      const errorText = await midtransResponse.text();
-      console.error('Midtrans error response:', errorText);
-      throw new Error(`Midtrans API error: ${midtransResponse.status} - ${errorText}`);
+      if (!midtransResponse.ok) {
+        const errorText = await midtransResponse.text();
+        console.error('Midtrans error response:', errorText);
+        throw new Error(`Midtrans API error: ${midtransResponse.status} - ${errorText}`);
+      }
+
+      const midtransData = await midtransResponse.json();
+      console.log('Midtrans success response:', midtransData);
+
+      return new Response(
+        JSON.stringify({
+          snap_token: midtransData.token,
+          redirect_url: midtransData.redirect_url,
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    } catch (midtransError) {
+      console.error('Midtrans API call failed:', midtransError);
+      throw new Error(`Midtrans API call failed: ${midtransError.message}`);
     }
 
-    const midtransData = await midtransResponse.json();
-    console.log('Midtrans success response:', midtransData);
-
-    return new Response(
-      JSON.stringify({
-        snap_token: midtransData.token,
-        redirect_url: midtransData.redirect_url,
-      }),
-      {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      }
-    );
   } catch (error) {
-    console.error('Error in create-payment function:', error);
+    console.error('=== ERROR IN CREATE-PAYMENT FUNCTION ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    
     return new Response(
       JSON.stringify({ 
         error: error.message || 'An unexpected error occurred',
-        details: error.toString()
+        details: error.toString(),
+        type: error.constructor.name
       }),
       {
         status: 500,
