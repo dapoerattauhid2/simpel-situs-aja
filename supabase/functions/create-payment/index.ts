@@ -106,23 +106,68 @@ serve(async (req) => {
     const finalCustomerDetails = { ...defaultCustomerDetails, ...customerDetails };
     console.log('Customer details:', finalCustomerDetails);
 
-    // Prepare default item details if not provided
-    const finalItemDetails = itemDetails && itemDetails.length > 0 ? itemDetails : [
-      {
-        id: orderId,
-        price: amount,
-        quantity: 1,
-        name: 'Payment',
+    // Process and fix item details for Midtrans requirements
+    let finalItemDetails;
+    if (itemDetails && itemDetails.length > 0) {
+      console.log('Processing item details:', itemDetails);
+      
+      // Truncate item names that are too long (Midtrans limit is around 50 chars)
+      finalItemDetails = itemDetails.map((item: any, index: number) => {
+        const truncatedName = item.name && item.name.length > 45 
+          ? item.name.substring(0, 45) + '...' 
+          : item.name || `Item ${index + 1}`;
+          
+        return {
+          id: item.id || `item-${index + 1}`,
+          price: Math.round(item.price || 0),
+          quantity: item.quantity || 1,
+          name: truncatedName,
+        };
+      });
+      
+      // Verify total calculation
+      const calculatedTotal = finalItemDetails.reduce((sum: number, item: any) => {
+        return sum + (item.price * item.quantity);
+      }, 0);
+      
+      console.log('Item details total:', calculatedTotal);
+      console.log('Expected amount:', amount);
+      
+      // If totals don't match, adjust the last item or create a single summary item
+      if (calculatedTotal !== amount) {
+        console.log('Total mismatch detected, creating summary item');
+        finalItemDetails = [
+          {
+            id: orderId,
+            price: Math.round(amount),
+            quantity: 1,
+            name: batchOrderIds && batchOrderIds.length > 1 
+              ? `Batch Payment (${batchOrderIds.length} orders)` 
+              : 'Payment',
+          }
+        ];
       }
-    ];
+    } else {
+      // Default item if none provided
+      finalItemDetails = [
+        {
+          id: orderId,
+          price: Math.round(amount),
+          quantity: 1,
+          name: batchOrderIds && batchOrderIds.length > 1 
+            ? `Batch Payment (${batchOrderIds.length} orders)` 
+            : 'Payment',
+        }
+      ];
+    }
 
-    console.log('Item details:', finalItemDetails);
+    console.log('Final item details:', finalItemDetails);
 
     // Create Midtrans transaction
     const midtransPayload = {
       transaction_details: {
         order_id: orderId,
-        gross_amount: amount,
+        gross_amount: Math.round(amount),
       },
       customer_details: finalCustomerDetails,
       item_details: finalItemDetails,
